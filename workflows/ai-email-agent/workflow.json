@@ -1,0 +1,488 @@
+{
+  "name": "AI Email Agent — Classify, Draft, Route, Respond",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-cred",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ $json.id }}",
+        "options": {
+          "dataPropertyAttachmentsPrefixName": "attachment"
+        }
+      },
+      "id": "get-email",
+      "name": "Get Full Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 3,
+      "position": [470, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-cred",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an email classification agent. Classify the incoming email into EXACTLY ONE of these categories:\n\n1. CUSTOMER_INQUIRY — A customer asking about products, services, pricing, or account\n2. SUPPORT_REQUEST — A technical issue, bug report, or help request\n3. SALES_LEAD — A potential buyer, partnership request, or demo request\n4. INTERNAL — Internal company communication (from @company.com addresses)\n5. SPAM — Unsolicited, promotional, or irrelevant\n\nRespond with ONLY the category name and a one-sentence reason.\nExample: CUSTOMER_INQUIRY — Asking about pricing for the Pro plan"
+            },
+            {
+              "role": "user",
+              "content": "From: {{ $json.from }}\nSubject: {{ $json.subject }}\nBody: {{ $json.text }}\n\nClassify this email."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "ai-classify",
+      "name": "AI Classify Intent",
+      "type": "@n8n/n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [690, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "outputKey": "customer_inquiry",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "condition-1",
+                    "leftValue": "={{ $json.message.content }}",
+                    "rightValue": "CUSTOMER_INQUIRY",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutputKey": true
+            },
+            {
+              "outputKey": "support_request",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.content }}",
+                    "rightValue": "SUPPORT_REQUEST",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutputKey": true
+            },
+            {
+              "outputKey": "sales_lead",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.content }}",
+                    "rightValue": "SALES_LEAD",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutputKey": true
+            },
+            {
+              "outputKey": "internal",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.content }}",
+                    "rightValue": "INTERNAL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutputKey": true
+            },
+            {
+              "outputKey": "spam",
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.content }}",
+                    "rightValue": "SPAM",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutputKey": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "router",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a professional email response drafter. Draft a helpful, concise, and friendly response to this email. Match the tone of the original email. If you need more information to respond properly, say so. Keep it under 200 words.\n\nCompany context: MARRØW DIVISION — AI automation and music production services. Professional but approachable tone."
+            },
+            {
+              "role": "user",
+              "content": "Original email from: {{ $('Get Full Email').item.json.from }}\nSubject: {{ $('Get Full Email').item.json.subject }}\nBody: {{ $('Get Full Email').item.json.text }}\n\nClassification: Customer Inquiry\n\nDraft a response:"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "draft-customer",
+      "name": "Draft Customer Response",
+      "type": "@n8n/n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1130, 100],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a technical support agent. Draft a helpful response to this support request. Ask clarifying questions if needed. Be specific and actionable. Keep it under 200 words."
+            },
+            {
+              "role": "user",
+              "content": "Original email from: {{ $('Get Full Email').item.json.from }}\nSubject: {{ $('Get Full Email').item.json.subject }}\nBody: {{ $('Get Full Email').item.json.text }}\n\nClassification: Support Request\n\nDraft a response:"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "draft-support",
+      "name": "Draft Support Response",
+      "type": "@n8n/n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1130, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a sales development representative. Draft a warm, professional response to this sales inquiry. Acknowledge their interest, suggest a call or demo, and include a calendar link placeholder. Keep it under 150 words."
+            },
+            {
+              "role": "user",
+              "content": "Original email from: {{ $('Get Full Email').item.json.from }}\nSubject: {{ $('Get Full Email').item.json.subject }}\nBody: {{ $('Get Full Email').item.json.text }}\n\nClassification: Sales Lead\n\nDraft a response:"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "draft-sales",
+      "name": "Draft Sales Response",
+      "type": "@n8n/n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1130, 500],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "createDraft",
+        "message": "={{ $json.message.content }}",
+        "options": {
+          "subject": "Re: {{ $('Get Full Email').item.json.subject }}",
+          "to": "={{ $('Get Full Email').item.json.from }}"
+        }
+      },
+      "id": "save-draft",
+      "name": "Save Draft to Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 3,
+      "position": [1350, 200],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-cred",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabel",
+        "messageId": "={{ $('Get Full Email').item.json.id }}",
+        "labelName": "AI-Processed"
+      },
+      "id": "label-email",
+      "name": "Label as Processed",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 3,
+      "position": [1350, 400],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-cred",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{ $json.sheetId }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.toISO() }}",
+            "From": "={{ $('Get Full Email').item.json.from }}",
+            "Subject": "={{ $('Get Full Email').item.json.subject }}",
+            "Classification": "={{ $('AI Classify Intent').item.json.message.content }}",
+            "Action": "Draft created + labeled",
+            "Review_Needed": "No"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-to-sheet",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1570, 300],
+      "credentials": {
+        "googleSheetsOAuth2": {
+          "id": "sheets-cred",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Full Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Full Email": {
+      "main": [
+        [
+          {
+            "node": "AI Classify Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Classify Intent": {
+      "main": [
+        [
+          {
+            "node": "Route by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Intent": {
+      "main": [
+        [
+          {
+            "node": "Draft Customer Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Draft Support Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Draft Sales Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        []
+      ]
+    },
+    "Draft Customer Response": {
+      "main": [
+        [
+          {
+            "node": "Save Draft to Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Support Response": {
+      "main": [
+        [
+          {
+            "node": "Save Draft to Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Sales Response": {
+      "main": [
+        [
+          {
+            "node": "Save Draft to Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Draft to Gmail": {
+      "main": [
+        [
+          {
+            "node": "Label as Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Label as Processed": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
