@@ -3,100 +3,525 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MARRØW DIVISION — AI Automation Portfolio</title>
+<title>MARRØW DIVISION — AI Agents That Work</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
 :root {
-  --bg: #0a0a0f;
-  --surface: #12121a;
-  --surface2: #1a1a28;
-  --border: #2a2a3a;
-  --text: #e8e8f0;
-  --text2: #8888a0;
-  --accent: #6c5ce7;
-  --accent2: #a29bfe;
-  --green: #00d2a0;
-  --orange: #ff9f43;
-  --red: #ff6b6b;
+  --bg: #050508;
+  --text: #f0f0f5;
+  --text2: #6b6b80;
+  --accent: #7c3aed;
+  --accent2: #a78bfa;
+  --green: #10b981;
+  --gold: #f59e0b;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Inter', -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
 
-.container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+/* FULLSCREEN 3D CANVAS */
+#scene-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+}
+
+#three-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* CONTENT LAYER — sits on top of 3D */
+.content-layer {
+  position: relative;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.content-layer > * {
+  pointer-events: auto;
+}
 
 /* NAV */
-nav {
-  padding: 20px 0;
-  border-bottom: 1px solid var(--border);
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 24px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative;
-  z-index: 10;
+  background: linear-gradient(to bottom, rgba(5,5,8,0.9) 0%, transparent 100%);
 }
-nav .logo { font-weight: 700; font-size: 1.2rem; color: var(--accent2); }
-nav .logo span { color: var(--text); font-weight: 400; font-size: 0.85rem; margin-left: 8px; }
-nav a { color: var(--text2); text-decoration: none; margin-left: 24px; font-size: 0.9rem; transition: color 0.2s; }
-nav a:hover { color: var(--accent2); }
 
-/* HERO */
-.hero { padding: 60px 0 40px; position: relative; }
-.hero-content { display: flex; align-items: center; gap: 40px; }
-.hero-text { flex: 1; }
-.hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.1; margin-bottom: 16px; }
-.hero h1 .accent { color: var(--accent2); }
-.hero p { font-size: 1.1rem; color: var(--text2); max-width: 500px; margin-bottom: 28px; }
-.hero .badge {
+.nav-logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.nav-logo span {
+  color: var(--accent2);
+  font-weight: 400;
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+}
+
+.nav-links a {
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: color 0.3s;
+  letter-spacing: 0.02em;
+}
+
+.nav-links a:hover {
+  color: var(--text);
+}
+
+/* HERO — centered in viewport */
+.hero {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.hero-content {
+  max-width: 700px;
+}
+
+.hero-badge {
   display: inline-block;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 6px 16px;
-  font-size: 0.8rem;
-  color: var(--green);
-  margin-right: 8px;
-  margin-bottom: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 100px;
+  padding: 6px 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  background: rgba(124, 58, 237, 0.08);
+  backdrop-filter: blur(10px);
 }
 
-/* 3D CHARACTER CANVAS */
-.hero-canvas {
-  width: 280px;
-  height: 280px;
-  flex-shrink: 0;
-  position: relative;
-  border-radius: 20px;
-  overflow: hidden;
-  background: radial-gradient(ellipse at center, rgba(108,92,231,0.15) 0%, transparent 70%);
+.hero h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin-bottom: 24px;
+  color: var(--text);
 }
 
-/* SPEECH BUBBLE */
-.speech-bubble {
+.hero h1 .highlight {
+  background: linear-gradient(135deg, var(--accent2), var(--green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero p {
+  font-size: 1.1rem;
+  color: var(--text2);
+  max-width: 500px;
+  margin: 0 auto 40px;
+  line-height: 1.7;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent);
+  color: white;
+  padding: 14px 32px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  border: none;
+  cursor: pointer;
+}
+
+.hero-cta:hover {
+  background: #6d28d9;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.4);
+}
+
+.scroll-hint {
   position: absolute;
-  bottom: -10px;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 12px 20px;
-  font-size: 0.85rem;
-  color: var(--text);
-  white-space: nowrap;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  opacity: 0;
-  animation: bubbleIn 1s ease 2s forwards;
-  pointer-events: none;
-  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text2);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  animation: float 2s ease-in-out infinite;
 }
-.speech-bubble::after {
+
+.scroll-line {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--accent2), transparent);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(8px); }
+}
+
+/* SECTIONS — glass panels over 3D */
+.section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+}
+
+.glass-panel {
+  background: rgba(12, 12, 20, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: 24px;
+  padding: 60px;
+  max-width: 900px;
+  width: 100%;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent2);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.section h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+  line-height: 1.1;
+}
+
+.section h2 .highlight {
+  background: linear-gradient(135deg, var(--accent2), var(--green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-desc {
+  color: var(--text2);
+  font-size: 1rem;
+  margin-bottom: 40px;
+  max-width: 550px;
+}
+
+/* WORKFLOW CARDS */
+.workflow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.workflow-card {
+  background: rgba(20, 20, 35, 0.6);
+  border: 1px solid rgba(124, 58, 237, 0.12);
+  border-radius: 16px;
+  padding: 28px;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.workflow-card:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
+}
+
+.workflow-card .icon {
+  font-size: 2rem;
+  margin-bottom: 16px;
+}
+
+.workflow-card h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.workflow-card p {
+  color: var(--text2);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.workflow-card .tag {
+  display: inline-block;
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--accent2);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.pipeline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.pipeline .step {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text2);
+  white-space: nowrap;
+}
+
+.pipeline .step.ai {
+  border-color: var(--accent);
+  color: var(--accent2);
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.pipeline .arrow {
+  color: var(--text2);
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
+/* PRICING */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.price-card {
+  background: rgba(20, 20, 35, 0.6);
+  border: 1px solid rgba(124, 58, 237, 0.12);
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.price-card:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+  transform: translateY(-4px);
+}
+
+.price-card.featured {
+  border-color: var(--accent);
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.price-card .tier {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.price-card .amount {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.price-card .amount span {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text2);
+}
+
+.price-card .desc {
+  font-size: 0.85rem;
+  color: var(--text2);
+  margin: 16px 0;
+}
+
+.price-card ul {
+  list-style: none;
+  text-align: left;
+  margin: 20px 0;
+}
+
+.price-card ul li {
+  font-size: 0.82rem;
+  color: var(--text2);
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.price-card ul li::before {
+  content: '✓ ';
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* METRICS */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.metric {
+  text-align: center;
+  padding: 24px;
+  background: rgba(20, 20, 35, 0.4);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+.metric .number {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent2);
+}
+
+.metric .label {
+  font-size: 0.72rem;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+
+/* CTA SECTION */
+.cta-section {
+  text-align: center;
+}
+
+.cta-section h2 {
+  margin-bottom: 16px;
+}
+
+.cta-section p {
+  color: var(--text2);
+  margin-bottom: 32px;
+  max-width: 450px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* FOOTER */
+.footer {
+  position: relative;
+  z-index: 10;
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 0.8rem;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  background: rgba(5,5,8,0.9);
+}
+
+.footer a {
+  color: var(--accent2);
+  text-decoration: none;
+  margin: 0 12px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .nav { padding: 16px 20px; }
+  .nav-links { gap: 16px; }
+  .nav-links a { font-size: 0.78rem; }
+  .glass-panel { padding: 32px 20px; border-radius: 16px; }
+  .workflow-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+  .hero h1 { font-size: 2.2rem; }
+}
+
+/* SPEECH BUBBLE — from 3D character */
+#character-speech {
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: rgba(12, 12, 20, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  border-radius: 16px;
+  padding: 14px 28px;
+  font-size: 0.9rem;
+  color: var(--text);
+  max-width: 400px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+
+#character-speech.visible {
+  opacity: 1;
+}
+
+#character-speech::after {
   content: '';
   position: absolute;
   top: -8px;
@@ -106,645 +531,593 @@ nav a:hover { color: var(--accent2); }
   height: 0;
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
-  border-bottom: 8px solid var(--surface2);
+  border-bottom: 8px solid rgba(12, 12, 20, 0.85);
 }
 
-@keyframes bubbleIn {
-  0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
-  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
-}
-
-/* METRICS */
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin: 40px 0;
-}
-.metric {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-}
-.metric .number { font-size: 1.8rem; font-weight: 800; color: var(--accent2); }
-.metric .label { font-size: 0.75rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-
-/* SECTION */
-section { padding: 60px 0; border-top: 1px solid var(--border); }
-section h2 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
-section h2 .accent { color: var(--accent2); }
-section .subtitle { color: var(--text2); margin-bottom: 32px; font-size: 0.95rem; }
-
-/* WORKFLOW CARD */
-.workflow-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 32px;
-  margin-bottom: 24px;
-  position: relative;
-  overflow: hidden;
-}
-.workflow-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent), var(--green));
-}
-.workflow-card h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
-.workflow-card .tag {
-  display: inline-block;
-  background: rgba(108, 92, 231, 0.15);
-  color: var(--accent2);
-  border-radius: 6px;
-  padding: 3px 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-right: 6px;
-  margin-bottom: 12px;
-}
-.workflow-card p { color: var(--text2); margin-bottom: 16px; }
-
-/* PIPELINE */
-.pipeline {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 20px 0;
-  flex-wrap: wrap;
-}
-.pipeline .step {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.pipeline .step.ai { border-color: var(--accent); color: var(--accent2); }
-.pipeline .arrow { color: var(--text2); font-size: 1.2rem; }
-
-/* FEATURE LIST */
-.features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-.feature {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 0.9rem;
-  color: var(--text2);
-}
-.feature .check { color: var(--green); font-weight: 700; flex-shrink: 0; }
-
-/* PRICING */
-.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.price-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 28px;
-  text-align: center;
-  transition: border-color 0.2s;
-}
-.price-card:hover { border-color: var(--accent); }
-.price-card.featured { border-color: var(--accent); }
-.price-card.featured::after {
-  content: 'MOST POPULAR';
-  display: block;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: var(--accent2);
-  margin-bottom: 12px;
-}
-.price-card .tier { font-size: 0.8rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-.price-card .amount { font-size: 2.2rem; font-weight: 800; color: var(--text); margin-bottom: 4px; }
-.price-card .amount span { font-size: 0.9rem; font-weight: 400; color: var(--text2); }
-.price-card .desc { font-size: 0.85rem; color: var(--text2); margin: 16px 0; }
-.price-card ul { list-style: none; text-align: left; margin: 20px 0; }
-.price-card ul li { font-size: 0.85rem; color: var(--text2); padding: 6px 0; border-bottom: 1px solid var(--border); }
-.price-card ul li::before { content: '✓ '; color: var(--green); font-weight: 700; }
-
-/* TECH STACK */
-.tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.tech-item {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
-}
-.tech-item .name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
-.tech-item .why { font-size: 0.8rem; color: var(--text2); }
-
-/* CTA */
-.cta-section {
-  text-align: center;
-  padding: 80px 0;
-  border-top: 1px solid var(--border);
-}
-.cta-section h2 { font-size: 2rem; margin-bottom: 12px; }
-.cta-section p { color: var(--text2); margin-bottom: 32px; }
-.cta-btn {
-  display: inline-block;
-  background: var(--accent);
-  color: white;
-  padding: 14px 36px;
-  border-radius: 10px;
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 1rem;
-  transition: background 0.2s;
-}
-.cta-btn:hover { background: var(--accent2); }
-
-/* FOOTER */
-footer {
-  padding: 40px 0;
-  border-top: 1px solid var(--border);
-  text-align: center;
-  color: var(--text2);
-  font-size: 0.85rem;
-}
-
-/* RESPONSIVE */
-@media (max-width: 700px) {
-  .hero h1 { font-size: 2rem; }
-  .hero-content { flex-direction: column; text-align: center; }
-  .hero-canvas { width: 220px; height: 220px; }
-  .metrics { grid-template-columns: repeat(2, 1fr); }
-  .pricing-grid { grid-template-columns: 1fr; }
-  .features { grid-template-columns: 1fr; }
-  .tech-grid { grid-template-columns: 1fr; }
-  .pipeline { flex-direction: column; }
-  .pipeline .arrow { transform: rotate(90deg); }
+/* CURSOR GLOW */
+#cursor-glow {
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  transition: left 0.1s ease, top 0.1s ease;
 }
 </style>
 </head>
 <body>
 
-<nav class="container">
-  <div class="logo">MARRØW DIVISION <span>AI Automation</span></div>
-  <div>
-    <a href="#workflows">Workflows</a>
-    <a href="#pricing">Pricing</a>
-    <a href="#contact">Contact</a>
-  </div>
-</nav>
+<!-- 3D SCENE -->
+<div id="scene-container">
+  <canvas id="three-canvas"></canvas>
+</div>
 
-<div class="hero container">
-  <div class="hero-content">
-    <div class="hero-text">
-      <h1>AI Agents That<br><span class="accent">Actually Work.</span></h1>
-      <p>20+ years building systems that run. Now building AI-powered automation workflows that save businesses 10-40 hours per week. No enterprise bloat. One person, direct communication, flat pricing.</p>
-      <div>
-        <span class="badge">n8n Certified</span>
-        <span class="badge">AI Agent Engineering</span>
-        <span class="badge">20+ Years Production</span>
-        <span class="badge">Flat Rate Pricing</span>
+<!-- CURSOR GLOW -->
+<div id="cursor-glow"></div>
+
+<!-- CHARACTER SPEECH -->
+<div id="character-speech"></div>
+
+<!-- CONTENT -->
+<div class="content-layer">
+
+  <nav class="nav">
+    <div class="logo">MARRØW DIVISION <span>/ AI</span></div>
+    <div class="nav-links">
+      <a href="#workflows">Work</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">AI Automation Engineer</div>
+      <h1>Your inbox handles<br><span class="highlight">itself.</span></h1>
+      <p>I build AI agents that read email, draft responses, route leads, and publish content — automatically. 20+ years building systems that run. Now running yours.</p>
+      <a href="#contact" class="hero-cta">Get Free Scoping Call →</a>
+    </div>
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- METRICS -->
+  <section class="section">
+    <div class="glass-panel" style="text-align:center;">
+      <div class="metrics-row">
+        <div class="metric">
+          <div class="number">78+</div>
+          <div class="label">Active Market Listings</div>
+        </div>
+        <div class="metric">
+          <div class="number">$150-400</div>
+          <div class="label">Per Workflow</div>
+        </div>
+        <div class="metric">
+          <div class="number">3-5 days</div>
+          <div class="label">Delivery</div>
+        </div>
+        <div class="metric">
+          <div class="number">94%</div>
+          <div class="label">Accuracy Rate</div>
+        </div>
       </div>
     </div>
-    <div class="hero-canvas" id="character-canvas">
-      <!-- Three.js character renders here -->
-      <div class="speech-bubble" id="speech-bubble">Hey! Let me show you around.</div>
+  </section>
+
+  <!-- WORKFLOWS -->
+  <section class="section" id="workflows">
+    <div class="glass-panel">
+      <div class="section-label">What I Build</div>
+      <h2>AI agents that<br><span class="highlight">save hours.</span></h2>
+      <p class="section-desc">Small, focused n8n workflows that automate one specific process end-to-end. Not a dev shop. One person, direct communication, flat pricing.</p>
+
+      <div class="workflow-grid">
+        <div class="workflow-card">
+          <div class="icon">📧</div>
+          <span class="tag">FLAGSHIP</span>
+          <span class="tag">AI + n8n</span>
+          <h3>AI Email Agent</h3>
+          <p>Reads incoming emails, classifies intent using GPT-4o, drafts professional responses, routes to the right action, and logs everything.</p>
+          <div class="pipeline">
+            <div class="step">Email</div>
+            <div class="arrow">→</div>
+            <div class="step ai">AI Classify</div>
+            <div class="arrow">→</div>
+            <div class="step ai">AI Draft</div>
+            <div class="arrow">→</div>
+            <div class="step">Route + Log</div>
+          </div>
+        </div>
+
+        <div class="workflow-card">
+          <div class="icon">🎯</div>
+          <span class="tag">COMING SOON</span>
+          <h3>Lead Enrichment Agent</h3>
+          <p>Finds prospects from LinkedIn and directories. Enriches with company data using AI. Pushes qualified leads to your CRM with a full brief.</p>
+          <div class="pipeline">
+            <div class="step">Source</div>
+            <div class="arrow">→</div>
+            <div class="step ai">AI Scrape</div>
+            <div class="arrow">→</div>
+            <div class="step ai">AI Enrich</div>
+            <div class="arrow">→</div>
+            <div class="step">CRM + Alert</div>
+          </div>
+        </div>
+
+        <div class="workflow-card">
+          <div class="icon">📝</div>
+          <span class="tag">COMING SOON</span>
+          <h3>Content Pipeline</h3>
+          <p>Monitors RSS feeds in your niche. AI summarizes, rewrites, and formats. Auto-publishes to WordPress, Medium, or social media.</p>
+          <div class="pipeline">
+            <div class="step">RSS Feeds</div>
+            <div class="arrow">→</div>
+            <div class="step ai">AI Rewrite</div>
+            <div class="arrow">→</div>
+            <div class="step">Auto-Publish</div>
+            <div class="arrow">→</div>
+            <div class="step">Social</div>
+          </div>
+        </div>
+
+        <div class="workflow-card">
+          <div class="icon">🎵</div>
+          <span class="tag">YOUR EXPERTISE</span>
+          <h3>Audio Services</h3>
+          <p>Mixing and mastering with 20+ years in the chair. MARRØW DIVISION catalog. Sync licensing. Sample packs. The full pipeline.</p>
+          <div class="pipeline">
+            <div class="step">Stems</div>
+            <div class="arrow">→</div>
+            <div class="step">Mix</div>
+            <div class="arrow">→</div>
+            <div class="step">Master</div>
+            <div class="arrow">→</div>
+            <div class="step">Deliver</div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="section" id="pricing">
+    <div class="glass-panel">
+      <div class="section-label">Pricing</div>
+      <h2>Flat rate. <span class="highlight">No surprises.</span></h2>
+      <p class="section-desc">Hourly billing rewards slow work. Flat pricing rewards efficient work. I know what I'm doing — 20 years of building systems proves it.</p>
+
+      <div class="pricing-grid">
+        <div class="price-card">
+          <div class="tier">Basic</div>
+          <div class="amount">$125 <span>/ workflow</span></div>
+          <div class="desc">Single automation, up to 10 nodes</div>
+          <ul>
+            <li>Up to 10 n8n nodes</li>
+            <li>3-day delivery</li>
+            <li>1 revision round</li>
+            <li>Documentation included</li>
+          </ul>
+        </div>
+        <div class="price-card featured">
+          <div class="tier">Standard</div>
+          <div class="amount">$250 <span>/ workflow</span></div>
+          <div class="desc">Multi-step with integrations</div>
+          <ul>
+            <li>Up to 25 n8n nodes</li>
+            <li>API integrations</li>
+            <li>5-day delivery</li>
+            <li>Error handling + logging</li>
+            <li>Loom walkthrough video</li>
+          </ul>
+        </div>
+        <div class="price-card">
+          <div class="tier">Premium</div>
+          <div class="amount">$400 <span>/ workflow</span></div>
+          <div class="desc">Complex, production grade</div>
+          <ul>
+            <li>Unlimited nodes</li>
+            <li>Multiple API integrations</li>
+            <li>7-day delivery</li>
+            <li>Full error handling + monitoring</li>
+            <li>Docs + Loom + 30-day support</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section" id="contact">
+    <div class="glass-panel cta-section">
+      <div class="section-label">Let's Talk</div>
+      <h2>Ready to <span class="highlight">automate?</span></h2>
+      <p>Send me a message. I'll tell you exactly what I can automate and what it'll cost. Free 15-minute scoping call. No pressure. No upsell.</p>
+      <a href="mailto:harvey@marrowdivision.com" class="hero-cta">Get Free Scoping Call →</a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>MARRØW DIVISION — Built by Harvey. 20+ years music production. Now building AI agents that work.</p>
+    <p style="margin-top:12px;">
+      <a href="https://github.com/Vindettasky89/ai-automation-portfolio">GitHub</a>
+      <a href="mailto:harvey@marrowdivision.com">Email</a>
+    </p>
+  </footer>
+
 </div>
 
-<div class="container">
-  <div class="metrics">
-    <div class="metric">
-      <div class="number">78+</div>
-      <div class="label">Active Market Listings</div>
-    </div>
-    <div class="metric">
-      <div class="number">$150-400</div>
-      <div class="label">Per Workflow</div>
-    </div>
-    <div class="metric">
-      <div class="number">3-5</div>
-      <div class="label">Day Delivery</div>
-    </div>
-    <div class="metric">
-      <div class="number">94%</div>
-      <div class="label">Accuracy Rate</div>
-    </div>
-  </div>
-</div>
-
-<!-- WORKFLOWS -->
-<section id="workflows" class="container">
-  <h2>Featured <span class="accent">Workflows</span></h2>
-  <p class="subtitle">Production-ready n8n workflows. Import, configure, deploy. Full documentation included.</p>
-
-  <div class="workflow-card">
-    <span class="tag">FLAGSHIP</span>
-    <span class="tag">AI + n8n</span>
-    <h3>AI Email Agent — Classify, Draft, Route, Respond</h3>
-    <p>Reads incoming emails, classifies intent using GPT-4o, drafts professional responses, routes to the right action, and logs everything. Handles customer inquiries, support requests, sales leads, and internal comms — automatically.</p>
-    <div class="pipeline">
-      <div class="step">Incoming Email</div>
-      <div class="arrow">→</div>
-      <div class="step ai">AI Classify Intent</div>
-      <div class="arrow">→</div>
-      <div class="step ai">AI Draft Response</div>
-      <div class="arrow">→</div>
-      <div class="step">Route + Action</div>
-      <div class="arrow">→</div>
-      <div class="step">Log + Label</div>
-    </div>
-    <div class="features">
-      <div class="feature"><span class="check">✓</span> 5-intent classification (Customer, Support, Sales, Internal, Spam)</div>
-      <div class="feature"><span class="check">✓</span> GPT-4o powered response drafting with tone matching</div>
-      <div class="feature"><span class="check">✓</span> Auto-saves to Gmail drafts folder for human review</div>
-      <div class="feature"><span class="check">✓</span> Google Sheets logging with full audit trail</div>
-      <div class="feature"><span class="check">✓</span> Spam detection with auto-archive</div>
-      <div class="feature"><span class="check">✓</span> &lt;3 second average processing time</div>
-    </div>
-  </div>
-
-  <div class="workflow-card">
-    <span class="tag">COMING SOON</span>
-    <span class="tag">Lead Gen</span>
-    <h3>Lead Scraping + Enrichment Agent</h3>
-    <p>Finds potential customers from LinkedIn, directories, and social media. Enriches with company data using AI. Pushes qualified leads to your CRM with a full brief.</p>
-    <div class="pipeline">
-      <div class="step">Target Source</div>
-      <div class="arrow">→</div>
-      <div class="step ai">AI Scrape + Find</div>
-      <div class="arrow">→</div>
-      <div class="step ai">AI Enrich Data</div>
-      <div class="arrow">→</div>
-      <div class="step">Push to CRM</div>
-      <div class="arrow">→</div>
-      <div class="step">Slack Alert</div>
-    </div>
-  </div>
-
-  <div class="workflow-card">
-    <span class="tag">COMING SOON</span>
-    <span class="tag">Content</span>
-    <h3>AI Content Pipeline — RSS to Published</h3>
-    <p>Monitors RSS feeds and news sources in your niche. AI summarizes, rewrites, and formats content. Auto-publishes to WordPress, Medium, or social media.</p>
-    <div class="pipeline">
-      <div class="step">RSS Feeds</div>
-      <div class="arrow">→</div>
-      <div class="step ai">AI Summarize</div>
-      <div class="arrow">→</div>
-      <div class="step ai">AI Rewrite + Format</div>
-      <div class="arrow">→</div>
-      <div class="step">Auto-Publish</div>
-      <div class="arrow">→</div>
-      <div class="step">Social Distribution</div>
-    </div>
-  </div>
-</section>
-
-<!-- TECH STACK -->
-<section class="container">
-  <h2>Tech <span class="accent">Stack</span></h2>
-  <p class="subtitle">Every tool chosen for reliability, cost-effectiveness, and zero vendor lock-in.</p>
-  <div class="tech-grid">
-    <div class="tech-item"><div class="name">n8n (Self-Hosted)</div><div class="why">Open source automation. No per-run fees. You own your data.</div></div>
-    <div class="tech-item"><div class="name">OpenAI GPT-4o</div><div class="why">Best reasoning model for agent tasks. Swappable for Claude or local.</div></div>
-    <div class="tech-item"><div class="name">Gmail API</div><div class="why">Universal. Every business uses email. Works with any provider.</div></div>
-    <div class="tech-item"><div class="name">Airtable / Sheets</div><div class="why">Free tier. Easy to demo. Clients already know how to use them.</div></div>
-    <div class="tech-item"><div class="name">Railway / Render</div><div class="why">$5-7/month hosting. Always-on. Auto-deploys from GitHub.</div></div>
-    <div class="tech-item"><div class="name">Slack / Discord</div><div class="why">Instant notifications. Team visibility. No extra cost.</div></div>
-  </div>
-</section>
-
-<!-- PRICING -->
-<section id="pricing" class="container">
-  <h2><span class="accent">Pricing</span></h2>
-  <p class="subtitle">Flat rate. No scope creep. No hourly billing games.</p>
-  <div class="pricing-grid">
-    <div class="price-card">
-      <div class="tier">Basic</div>
-      <div class="amount">$125 <span>/ workflow</span></div>
-      <div class="desc">Single automation, up to 10 nodes</div>
-      <ul>
-        <li>Up to 10 n8n nodes</li>
-        <li>3-day delivery</li>
-        <li>1 revision round</li>
-        <li>Documentation included</li>
-        <li>Email support</li>
-      </ul>
-    </div>
-    <div class="price-card featured">
-      <div class="tier">Standard</div>
-      <div class="amount">$250 <span>/ workflow</span></div>
-      <div class="desc">Multi-step workflow with integrations</div>
-      <ul>
-        <li>Up to 25 n8n nodes</li>
-        <li>API integrations</li>
-        <li>5-day delivery</li>
-        <li>2 revision rounds</li>
-        <li>Error handling + logging</li>
-        <li>Loom walkthrough video</li>
-      </ul>
-    </div>
-    <div class="price-card">
-      <div class="tier">Premium</div>
-      <div class="amount">$400 <span>/ workflow</span></div>
-      <div class="desc">Complex workflow, full production grade</div>
-      <ul>
-        <li>Unlimited nodes</li>
-        <li>Multiple API integrations</li>
-        <li>7-day delivery</li>
-        <li>Unlimited revisions</li>
-        <li>Full error handling + monitoring</li>
-        <li>Documentation + Loom + 30-day support</li>
-      </ul>
-    </div>
-  </div>
-  <p style="text-align:center; margin-top:24px; color:var(--text2); font-size:0.9rem;">
-    Monthly retainer available: <strong style="color:var(--accent2);">$500/month</strong> for ongoing support + 2 new workflows/month
-  </p>
-</section>
-
-<!-- CTA -->
-<div id="contact" class="cta-section container">
-  <h2>Ready to <span class="accent">automate?</span></h2>
-  <p>Send me a message. I'll tell you exactly what I can automate and what it'll cost. Free 15-minute scoping call.</p>
-  <a href="mailto:harvey@marrowdivision.com" class="cta-btn">Get Free Scoping Call →</a>
-</div>
-
-<footer class="container">
-  <p>MARRØW DIVISION — AI Automation Portfolio</p>
-  <p style="margin-top:8px;">Built by Harvey. 20+ years music production. Now building AI agents that work.</p>
-  <p style="margin-top:16px;">
-    <a href="https://github.com/marrowdivision" style="color:var(--accent2); text-decoration:none;">GitHub</a> ·
-    <a href="https://peopleperhour.com" style="color:var(--accent2); text-decoration:none;">PeoplePerHour</a> ·
-    <a href="mailto:harvey@marrowdivision.com" style="color:var(--accent2); text-decoration:none;">Email</a>
-  </p>
-</footer>
-
-<!-- THREE.JS CHARACTER -->
+<!-- THREE.JS — IMMERSIVE 3D SCENE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function() {
-  const container = document.getElementById('character-canvas');
-  const bubble = document.getElementById('speech-bubble');
+  const canvas = document.getElementById('three-canvas');
+  const speechEl = document.getElementById('character-speech');
+  const cursorGlow = document.getElementById('cursor-glow');
 
-  // Fallback if WebGL not supported
+  // WebGL check
   if (!window.WebGLRenderingContext) {
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;text-align:center;padding:20px;"><div><div style="font-size:3rem;margin-bottom:12px;">&#x1F916;</div><div style="color:#a29bfe;font-weight:700;font-size:1.1rem;">MARR&#xD8;W DIVISION</div><div style="color:#8888a0;font-size:0.85rem;margin-top:4px;">AI Automation Engineer</div></div></div>';
+    canvas.style.background = 'radial-gradient(ellipse at center, #0d0d1a 0%, #050508 100%)';
     return;
   }
 
-  let renderer;
-  try {
-    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'default' });
-  } catch(e) {
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;text-align:center;padding:20px;"><div><div style="font-size:3rem;margin-bottom:12px;">&#x1F916;</div><div style="color:#a29bfe;font-weight:700;font-size:1.1rem;">MARR&#xD8;W DIVISION</div><div style="color:#8888a0;font-size:0.85rem;margin-top:4px;">AI Automation Engineer</div></div></div>';
-    return;
-  }
-
-  // Scene setup
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-  camera.position.set(0, 0.5, 5);
-  camera.lookAt(0, 0.3, 0);
-
-  const w = container.clientWidth || 280;
-  const h = container.clientHeight || 280;
-  renderer.setSize(w, h);
+  // Renderer
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x000000, 0);
-  container.insertBefore(renderer.domElement, bubble);
+  renderer.setClearColor(0x050508, 1);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // Scene
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x050508, 0.015);
+
+  // Camera
+  const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 2, 8);
+  camera.lookAt(0, 1, 0);
 
   // Lights
-  const ambientLight = new THREE.AmbientLight(0x6c5ce7, 0.6);
-  scene.add(ambientLight);
+  const ambient = new THREE.AmbientLight(0x1a1040, 0.4);
+  scene.add(ambient);
 
-  const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
-  mainLight.position.set(3, 5, 4);
-  scene.add(mainLight);
+  const keyLight = new THREE.DirectionalLight(0x7c3aed, 1.2);
+  keyLight.position.set(5, 8, 5);
+  keyLight.castShadow = true;
+  scene.add(keyLight);
 
-  const fillLight = new THREE.DirectionalLight(0x00d2a0, 0.3);
-  fillLight.position.set(-3, 2, -2);
+  const fillLight = new THREE.DirectionalLight(0x10b981, 0.4);
+  fillLight.position.set(-5, 3, -3);
   scene.add(fillLight);
 
-  // Character group
+  const rimLight = new THREE.DirectionalLight(0xf59e0b, 0.3);
+  rimLight.position.set(0, 5, -8);
+  scene.add(rimLight);
+
+  // Ground plane (reflective dark surface)
+  const groundGeo = new THREE.PlaneGeometry(60, 60);
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x08080f,
+    roughness: 0.3,
+    metalness: 0.8
+  });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.5;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // Grid lines on ground
+  const gridHelper = new THREE.GridHelper(40, 40, 0x1a1040, 0x0d0d1a);
+  gridHelper.position.y = -0.49;
+  scene.add(gridHelper);
+
+  // ===== CHARACTER =====
   const character = new THREE.Group();
   scene.add(character);
 
   // Materials
   const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x6c5ce7,
-    roughness: 0.3,
-    metalness: 0.2
+    color: 0x7c3aed,
+    roughness: 0.25,
+    metalness: 0.3,
+    emissive: 0x1a0a30,
+    emissiveIntensity: 0.2
   });
   const accentMat = new THREE.MeshStandardMaterial({
-    color: 0x00d2a0,
-    roughness: 0.4,
-    metalness: 0.1
+    color: 0x10b981,
+    roughness: 0.3,
+    metalness: 0.2,
+    emissive: 0x0a3020,
+    emissiveIntensity: 0.3
   });
-  const faceMat = new THREE.MeshStandardMaterial({
-    color: 0x1a1a28,
-    roughness: 0.8,
+  const darkMat = new THREE.MeshStandardMaterial({
+    color: 0x0a0a14,
+    roughness: 0.9,
     metalness: 0.0
   });
   const eyeMat = new THREE.MeshStandardMaterial({
-    color: 0xe8e8f0,
-    roughness: 0.2,
+    color: 0xf0f0f5,
+    roughness: 0.1,
     metalness: 0.0,
-    emissive: 0xa29bfe,
-    emissiveIntensity: 0.3
+    emissive: 0xa78bfa,
+    emissiveIntensity: 0.5
+  });
+  const goldMat = new THREE.MeshStandardMaterial({
+    color: 0xf59e0b,
+    roughness: 0.2,
+    metalness: 0.6,
+    emissive: 0x332200,
+    emissiveIntensity: 0.2
   });
 
-  // Head (sphere)
-  const headGeo = new THREE.SphereGeometry(0.55, 32, 32);
+  // Head
+  const headGeo = new THREE.SphereGeometry(0.6, 64, 64);
   const head = new THREE.Mesh(headGeo, bodyMat);
-  head.position.y = 1.1;
+  head.position.y = 1.6;
+  head.castShadow = true;
   character.add(head);
 
-  // Face plate (slightly flattened sphere in front)
-  const faceGeo = new THREE.SphereGeometry(0.52, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.6);
-  const face = new THREE.Mesh(faceGeo, faceMat);
-  face.position.set(0, 1.05, 0.15);
-  face.rotation.x = -0.2;
-  character.add(face);
+  // Face visor (sleek dark panel)
+  const visorGeo = new THREE.SphereGeometry(0.58, 64, 64, 0, Math.PI * 2, 0, Math.PI * 0.55);
+  const visor = new THREE.Mesh(visorGeo, darkMat);
+  visor.position.set(0, 1.55, 0.1);
+  visor.rotation.x = -0.15;
+  character.add(visor);
 
-  // Eyes
-  const eyeGeo = new THREE.SphereGeometry(0.08, 16, 16);
+  // Eyes (glowing orbs)
+  const eyeGeo = new THREE.SphereGeometry(0.07, 32, 32);
   const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-  leftEye.position.set(-0.18, 1.15, 0.48);
+  leftEye.position.set(-0.2, 1.65, 0.52);
   character.add(leftEye);
 
   const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-  rightEye.position.set(0.18, 1.15, 0.48);
+  rightEye.position.set(0.2, 1.65, 0.52);
   character.add(rightEye);
 
-  // Body (rounded cylinder / capsule shape)
-  const bodyGeo = new THREE.CylinderGeometry(0.4, 0.5, 0.9, 32);
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 0.35;
-  character.add(body);
+  // Neck
+  const neckGeo = new THREE.CylinderGeometry(0.2, 0.25, 0.3, 32);
+  const neck = new THREE.Mesh(neckGeo, bodyMat);
+  neck.position.y = 1.15;
+  character.add(neck);
 
-  // Shoulders (spheres at top of body)
-  const shoulderGeo = new THREE.SphereGeometry(0.2, 16, 16);
-  const leftShoulder = new THREE.Mesh(shoulderGeo, accentMat);
-  leftShoulder.position.set(-0.5, 0.7, 0);
-  character.add(leftShoulder);
+  // Torso (tapered)
+  const torsoGeo = new THREE.CylinderGeometry(0.35, 0.5, 1.0, 32);
+  const torso = new THREE.Mesh(torsoGeo, bodyMat);
+  torso.position.y = 0.5;
+  torso.castShadow = true;
+  character.add(torso);
 
-  const rightShoulder = new THREE.Mesh(shoulderGeo, accentMat);
-  rightShoulder.position.set(0.5, 0.7, 0);
-  character.add(rightShoulder);
+  // Chest plate (gold accent)
+  const chestGeo = new THREE.BoxGeometry(0.4, 0.3, 0.15, 2, 2, 2);
+  const chest = new THREE.Mesh(chestGeo, goldMat);
+  chest.position.set(0, 0.65, 0.35);
+  character.add(chest);
 
-  // Arms (thin cylinders)
-  const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.6, 16);
-  const leftArm = new THREE.Mesh(armGeo, bodyMat);
-  leftArm.position.set(-0.65, 0.3, 0);
-  leftArm.rotation.z = 0.3;
-  character.add(leftArm);
-
-  const rightArm = new THREE.Mesh(armGeo, bodyMat);
-  rightArm.position.set(0.65, 0.3, 0);
-  rightArm.rotation.z = -0.3;
-  character.add(rightArm);
-
-  // Hand spheres
-  const handGeo = new THREE.SphereGeometry(0.1, 16, 16);
-  const leftHand = new THREE.Mesh(handGeo, accentMat);
-  leftHand.position.set(-0.78, 0.05, 0);
-  character.add(leftHand);
-
-  const rightHand = new THREE.Mesh(handGeo, accentMat);
-  rightHand.position.set(0.78, 0.05, 0);
-  character.add(rightHand);
-
-  // Chest accent (glowing ring)
-  const ringGeo = new THREE.TorusGeometry(0.25, 0.03, 16, 32);
+  // Chest ring (glowing)
+  const ringGeo = new THREE.TorusGeometry(0.2, 0.025, 16, 64);
   const ring = new THREE.Mesh(ringGeo, accentMat);
-  ring.position.set(0, 0.5, 0.45);
+  ring.position.set(0, 0.5, 0.42);
   ring.rotation.x = 0.3;
   character.add(ring);
 
-  // Floating particles around character
-  const particles = [];
-  const particleGeo = new THREE.SphereGeometry(0.03, 8, 8);
-  const particleMat = new THREE.MeshBasicMaterial({ color: 0xa29bfe, transparent: true, opacity: 0.6 });
+  // Shoulders
+  const shoulderGeo = new THREE.SphereGeometry(0.22, 32, 32);
+  const leftShoulder = new THREE.Mesh(shoulderGeo, accentMat);
+  leftShoulder.position.set(-0.55, 0.9, 0);
+  character.add(leftShoulder);
 
-  for (let i = 0; i < 12; i++) {
-    const p = new THREE.Mesh(particleGeo, particleMat.clone());
-    const angle = (i / 12) * Math.PI * 2;
-    const radius = 1.0 + Math.random() * 0.5;
+  const rightShoulder = new THREE.Mesh(shoulderGeo, accentMat);
+  rightShoulder.position.set(0.55, 0.9, 0);
+  character.add(rightShoulder);
+
+  // Arms
+  const armGeo = new THREE.CylinderGeometry(0.08, 0.1, 0.7, 16);
+  const leftArm = new THREE.Mesh(armGeo, bodyMat);
+  leftArm.position.set(-0.72, 0.45, 0);
+  leftArm.rotation.z = 0.25;
+  character.add(leftArm);
+
+  const rightArm = new THREE.Mesh(armGeo, bodyMat);
+  rightArm.position.set(0.72, 0.45, 0);
+  rightArm.rotation.z = -0.25;
+  character.add(rightArm);
+
+  // Hands
+  const handGeo = new THREE.SphereGeometry(0.1, 16, 16);
+  const leftHand = new THREE.Mesh(handGeo, accentMat);
+  leftHand.position.set(-0.85, 0.1, 0);
+  character.add(leftHand);
+
+  const rightHand = new THREE.Mesh(handGeo, accentMat);
+  rightHand.position.set(0.85, 0.1, 0);
+  character.add(rightHand);
+
+  // Waist
+  const waistGeo = new THREE.CylinderGeometry(0.45, 0.4, 0.2, 32);
+  const waist = new THREE.Mesh(waistGeo, darkMat);
+  waist.position.y = -0.1;
+  character.add(waist);
+
+  // Legs
+  const legGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.8, 16);
+  const leftLeg = new THREE.Mesh(legGeo, darkMat);
+  leftLeg.position.set(-0.2, -0.6, 0);
+  character.add(leftLeg);
+
+  const rightLeg = new THREE.Mesh(legGeo, darkMat);
+  rightLeg.position.set(0.2, -0.6, 0);
+  character.add(rightLeg);
+
+  // Feet
+  const footGeo = new THREE.BoxGeometry(0.18, 0.08, 0.3);
+  const leftFoot = new THREE.Mesh(footGeo, bodyMat);
+  leftFoot.position.set(-0.2, -1.05, 0.05);
+  character.add(leftFoot);
+
+  const rightFoot = new THREE.Mesh(footGeo, bodyMat);
+  rightFoot.position.set(0.2, -1.05, 0.05);
+  character.add(rightFoot);
+
+  // ===== FLOATING PARTICLES =====
+  const particles = [];
+  const particleGeo = new THREE.SphereGeometry(0.02, 8, 8);
+
+  for (let i = 0; i < 80; i++) {
+    const p = new THREE.Mesh(particleGeo, new THREE.MeshBasicMaterial({
+      color: Math.random() > 0.5 ? 0x7c3aed : 0x10b981,
+      transparent: true,
+      opacity: 0.4 + Math.random() * 0.4
+    }));
     p.userData = {
-      angle: angle,
-      radius: radius,
-      speed: 0.3 + Math.random() * 0.5,
-      yOffset: Math.random() * 2 - 0.5,
-      ySpeed: 0.5 + Math.random() * 0.5
+      angle: Math.random() * Math.PI * 2,
+      radius: 1.5 + Math.random() * 4,
+      speed: 0.1 + Math.random() * 0.3,
+      yBase: -0.5 + Math.random() * 4,
+      ySpeed: 0.3 + Math.random() * 0.5,
+      yAmp: 0.3 + Math.random() * 0.5
     };
     particles.push(p);
     scene.add(p);
   }
 
-  // Ground shadow
-  const shadowGeo = new THREE.CircleGeometry(0.6, 32);
-  const shadowMat = new THREE.MeshBasicMaterial({ color: 0x6c5ce7, transparent: true, opacity: 0.15 });
-  const shadow = new THREE.Mesh(shadowGeo, shadowMat);
-  shadow.rotation.x = -Math.PI / 2;
-  shadow.position.y = -0.15;
-  scene.add(shadow);
-
-  // Speech bubble messages
-  const messages = [
-    "Hey! Let me show you around.",
-    "I build AI agents that work.",
-    "Flat rate. No surprises.",
-    "Let's automate your inbox!",
-    "20+ years of building systems."
-  ];
-  let msgIndex = 0;
-
-  function updateBubble() {
-    if (!bubble) return;
-    bubble.textContent = messages[msgIndex % messages.length];
-    msgIndex++;
-    bubble.style.animation = 'none';
-    bubble.offsetHeight; // trigger reflow
-    bubble.style.animation = 'bubbleIn 0.5s ease forwards';
+  // ===== ORBITING RINGS =====
+  const orbitRings = [];
+  for (let i = 0; i < 3; i++) {
+    const ringGeo2 = new THREE.TorusGeometry(2 + i * 0.8, 0.008, 8, 128);
+    const ringMat2 = new THREE.MeshBasicMaterial({
+      color: i === 0 ? 0x7c3aed : i === 1 ? 0x10b981 : 0xf59e0b,
+      transparent: true,
+      opacity: 0.2
+    });
+    const orbitRing = new THREE.Mesh(ringGeo2, ringMat2);
+    orbitRing.rotation.x = Math.PI / 2 + (i * 0.2);
+    orbitRing.userData = { speed: 0.2 + i * 0.1, axis: i };
+    orbitRings.push(orbitRing);
+    scene.add(orbitRing);
   }
 
-  // Change message every 5 seconds
-  setInterval(updateBubble, 5000);
-
-  // Mouse interaction
+  // ===== INTERACTION =====
   let mouseX = 0, mouseY = 0;
-  container.addEventListener('mousemove', (e) => {
-    const rect = container.getBoundingClientRect();
-    mouseX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-    mouseY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+  let targetRotY = 0, targetRotX = 0;
+  let scrollY = 0;
+
+  document.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+
+    // Cursor glow
+    cursorGlow.style.left = e.clientX + 'px';
+    cursorGlow.style.top = e.clientY + 'px';
   });
 
-  container.addEventListener('mouseleave', () => {
-    mouseX = 0;
-    mouseY = 0;
+  window.addEventListener('scroll', () => {
+    scrollY = window.scrollY;
   });
 
-  // Touch interaction for mobile
-  container.addEventListener('touchmove', (e) => {
-    const rect = container.getBoundingClientRect();
-    const touch = e.touches[0];
-    mouseX = ((touch.clientX - rect.left) / rect.width - 0.5) * 2;
-    mouseY = ((touch.clientY - rect.top) / rect.height - 0.5) * 2;
+  // Touch support
+  document.addEventListener('touchmove', (e) => {
+    mouseX = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
+    mouseY = (e.touches[0].clientY / window.innerHeight - 0.5) * 2;
   }, { passive: true });
 
-  container.addEventListener('touchend', () => {
-    mouseX = 0;
-    mouseY = 0;
+  document.addEventListener('touchend', () => {
+    mouseX = 0; mouseY = 0;
   });
 
-  // Handle resize
-  function onResize() {
-    const nw = container.clientWidth || 280;
-    const nh = container.clientHeight || 280;
-    camera.aspect = nw / nh;
-    camera.updateProjectionMatrix();
-    renderer.setSize(nw, nh);
-  }
-  window.addEventListener('resize', onResize);
+  // ===== SPEECH BUBBLE =====
+  const messages = [
+    "Hey! I'm Harvey. I build AI agents.",
+    "Your inbox? I can automate that.",
+    "Flat rate. No surprises. Ever.",
+    "20+ years building systems that work.",
+    "Let's automate your business.",
+    "AI + n8n = your time back."
+  ];
+  let msgIndex = 0;
+  let speechTimer = 0;
 
-  // Animation loop
+  function showSpeech() {
+    speechEl.textContent = messages[msgIndex % messages.length];
+    speechEl.classList.add('visible');
+    msgIndex++;
+
+    // Hide after 4 seconds
+    setTimeout(() => {
+      speechEl.classList.remove('visible');
+    }, 4000);
+  }
+
+  // First message after 2 seconds
+  setTimeout(showSpeech, 2000);
+  // Then every 8 seconds
+  setInterval(showSpeech, 8000);
+
+  // ===== RESIZE =====
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // ===== ANIMATION LOOP =====
   let time = 0;
   function animate() {
     requestAnimationFrame(animate);
     time += 0.016;
 
-    // Idle bob
-    character.position.y = Math.sin(time * 1.5) * 0.05;
-    character.rotation.y = Math.sin(time * 0.8) * 0.15;
+    // Character idle animation
+    character.position.y = Math.sin(time * 1.2) * 0.06;
+    character.rotation.y = Math.sin(time * 0.6) * 0.1 + mouseX * 0.3;
 
-    // Mouse follow (head tilts toward cursor)
-    head.rotation.y = mouseX * 0.4;
-    head.rotation.x = -mouseY * 0.2;
+    // Head follows mouse
+    head.rotation.y = mouseX * 0.5;
+    head.rotation.x = -mouseY * 0.25;
 
     // Eye tracking
-    leftEye.position.x = -0.18 + mouseX * 0.03;
-    leftEye.position.y = 1.15 + mouseY * 0.02;
-    rightEye.position.x = 0.18 + mouseX * 0.03;
-    rightEye.position.y = 1.15 + mouseY * 0.02;
+    leftEye.position.x = -0.2 + mouseX * 0.04;
+    leftEye.position.y = 1.65 + mouseY * 0.025;
+    rightEye.position.x = 0.2 + mouseX * 0.04;
+    rightEye.position.y = 1.65 + mouseY * 0.025;
 
     // Arm sway
-    leftArm.rotation.z = 0.3 + Math.sin(time * 1.2) * 0.1;
-    rightArm.rotation.z = -0.3 - Math.sin(time * 1.2) * 0.1;
+    leftArm.rotation.z = 0.25 + Math.sin(time * 1.0) * 0.08;
+    rightArm.rotation.z = -0.25 - Math.sin(time * 1.0) * 0.08;
 
     // Ring pulse
-    ring.scale.setScalar(1 + Math.sin(time * 3) * 0.1);
+    ring.scale.setScalar(1 + Math.sin(time * 2.5) * 0.12);
 
     // Particles orbit
     particles.forEach(p => {
       p.userData.angle += p.userData.speed * 0.016;
       p.position.x = Math.cos(p.userData.angle) * p.userData.radius;
       p.position.z = Math.sin(p.userData.angle) * p.userData.radius;
-      p.position.y = p.userData.yOffset + Math.sin(time * p.userData.ySpeed) * 0.3;
-      p.material.opacity = 0.3 + Math.sin(time * 2 + p.userData.angle) * 0.3;
+      p.position.y = p.userData.yBase + Math.sin(time * p.userData.ySpeed) * p.userData.yAmp;
+      p.material.opacity = 0.2 + Math.sin(time * 1.5 + p.userData.angle) * 0.3;
     });
+
+    // Orbit rings rotate
+    orbitRings.forEach(r => {
+      r.rotation.z += r.userData.speed * 0.016;
+    });
+
+    // Camera subtle movement based on scroll
+    const scrollNorm = scrollY / (document.body.scrollHeight - window.innerHeight || 1);
+    camera.position.y = 2 + scrollNorm * 2;
+    camera.position.z = 8 - scrollNorm * 3;
+    camera.lookAt(0, 1 + scrollNorm * 0.5, 0);
+
+    // Key light subtle movement
+    keyLight.position.x = 5 + Math.sin(time * 0.3) * 2;
+    keyLight.position.z = 5 + Math.cos(time * 0.2) * 2;
 
     renderer.render(scene, camera);
   }
