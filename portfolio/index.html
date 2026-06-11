@@ -489,14 +489,29 @@ footer {
   const container = document.getElementById('character-canvas');
   const bubble = document.getElementById('speech-bubble');
 
+  // Fallback if WebGL not supported
+  if (!window.WebGLRenderingContext) {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;text-align:center;padding:20px;"><div><div style="font-size:3rem;margin-bottom:12px;">&#x1F916;</div><div style="color:#a29bfe;font-weight:700;font-size:1.1rem;">MARR&#xD8;W DIVISION</div><div style="color:#8888a0;font-size:0.85rem;margin-top:4px;">AI Automation Engineer</div></div></div>';
+    return;
+  }
+
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'default' });
+  } catch(e) {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;text-align:center;padding:20px;"><div><div style="font-size:3rem;margin-bottom:12px;">&#x1F916;</div><div style="color:#a29bfe;font-weight:700;font-size:1.1rem;">MARR&#xD8;W DIVISION</div><div style="color:#8888a0;font-size:0.85rem;margin-top:4px;">AI Automation Engineer</div></div></div>';
+    return;
+  }
+
   // Scene setup
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
   camera.position.set(0, 0.5, 5);
   camera.lookAt(0, 0.3, 0);
 
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-  renderer.setSize(280, 280);
+  const w = container.clientWidth || 280;
+  const h = container.clientHeight || 280;
+  renderer.setSize(w, h);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 0);
   container.insertBefore(renderer.domElement, bubble);
@@ -648,6 +663,7 @@ footer {
   let msgIndex = 0;
 
   function updateBubble() {
+    if (!bubble) return;
     bubble.textContent = messages[msgIndex % messages.length];
     msgIndex++;
     bubble.style.animation = 'none';
@@ -670,6 +686,29 @@ footer {
     mouseX = 0;
     mouseY = 0;
   });
+
+  // Touch interaction for mobile
+  container.addEventListener('touchmove', (e) => {
+    const rect = container.getBoundingClientRect();
+    const touch = e.touches[0];
+    mouseX = ((touch.clientX - rect.left) / rect.width - 0.5) * 2;
+    mouseY = ((touch.clientY - rect.top) / rect.height - 0.5) * 2;
+  }, { passive: true });
+
+  container.addEventListener('touchend', () => {
+    mouseX = 0;
+    mouseY = 0;
+  });
+
+  // Handle resize
+  function onResize() {
+    const nw = container.clientWidth || 280;
+    const nh = container.clientHeight || 280;
+    camera.aspect = nw / nh;
+    camera.updateProjectionMatrix();
+    renderer.setSize(nw, nh);
+  }
+  window.addEventListener('resize', onResize);
 
   // Animation loop
   let time = 0;
@@ -697,7 +736,6 @@ footer {
 
     // Ring pulse
     ring.scale.setScalar(1 + Math.sin(time * 3) * 0.1);
-    ring.material.opacity = 0.6 + Math.sin(time * 3) * 0.3;
 
     // Particles orbit
     particles.forEach(p => {
